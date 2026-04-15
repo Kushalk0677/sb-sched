@@ -95,3 +95,52 @@ def summarise_results(results: list[RunResult]) -> dict:
                 "n_sequences": len(runs),
             }
     return summary
+
+
+def compute_area_over_threshold(p_history: list, p_max: float, warmup_steps: int = 100) -> float:
+    if not p_history:
+        return 0.0
+    post = np.array(p_history[warmup_steps:], dtype=float)
+    if post.size == 0:
+        return 0.0
+    return float(np.mean(np.maximum(post - p_max, 0.0)))
+
+
+def compute_max_overshoot(p_history: list, p_max: float, warmup_steps: int = 100) -> float:
+    if not p_history:
+        return 0.0
+    post = np.array(p_history[warmup_steps:], dtype=float)
+    if post.size == 0:
+        return 0.0
+    return float(np.max(np.maximum(post - p_max, 0.0)))
+
+
+def compute_recovery_durations(p_history: list, p_max: float, warmup_steps: int = 100, blackout_windows: list | None = None) -> list[int]:
+    blackout_windows = blackout_windows or []
+    p = np.array(p_history, dtype=float)
+    durations = []
+    for _start, end in blackout_windows:
+        if end < warmup_steps or end >= len(p):
+            continue
+        for idx in range(end, len(p)):
+            if p[idx] <= p_max:
+                durations.append(int(idx - end))
+                break
+        else:
+            durations.append(int(len(p) - end))
+    return durations
+
+
+def pareto_frontier_mask(points: np.ndarray) -> np.ndarray:
+    """Return mask for 2D minimisation Pareto frontier."""
+    points = np.asarray(points, dtype=float)
+    n = len(points)
+    mask = np.ones(n, dtype=bool)
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            if np.all(points[j] <= points[i]) and np.any(points[j] < points[i]):
+                mask[i] = False
+                break
+    return mask

@@ -45,11 +45,17 @@ def main() -> None:
     # Imports use the src package via the project root on sys.path
     from src.experiments.exp1_baseline_comparison import run_exp1
     from src.experiments.exp2_6 import run_exp2, run_exp3, run_exp4, run_exp5, run_exp6
+    from src.experiments.extended_experiments import run_exp7_outage_robustness, run_exp8_latency_jitter, run_exp9_resource_budget, run_exp10_motion_transitions, run_exp11_pareto
     from src.utils.plotting import (
         plot_exp1_vr_rr,
         plot_exp2_pmax_sensitivity,
         plot_exp4_motion_stress,
         plot_exp5_overhead,
+        plot_exp7_outage_robustness,
+        plot_exp8_latency_jitter,
+        plot_exp9_resource_budget,
+        plot_exp10_motion_transitions,
+        plot_exp11_pareto,
     )
 
     results = {}
@@ -73,6 +79,11 @@ def main() -> None:
     results[4] = run(4, run_exp4)
     results[5] = run(5, run_exp5)
     results[6] = run(6, run_exp6)
+    results[7] = run(7, run_exp7_outage_robustness)
+    results[8] = run(8, run_exp8_latency_jitter)
+    results[9] = run(9, run_exp9_resource_budget)
+    results[10] = run(10, run_exp10_motion_transitions)
+    results[11] = run(11, run_exp11_pareto)
 
     # Generate figures
     print("\n\nGenerating figures...")
@@ -84,6 +95,16 @@ def main() -> None:
         plot_exp4_motion_stress(results[4])
     if results[5] is not None and not results[5].empty:
         plot_exp5_overhead(results[5])
+    if results[7] is not None and not results[7].empty:
+        plot_exp7_outage_robustness(results[7])
+    if results[8] is not None and not results[8].empty:
+        plot_exp8_latency_jitter(results[8])
+    if results[9] is not None and not results[9].empty:
+        plot_exp9_resource_budget(results[9])
+    if results[10] is not None and not results[10].empty:
+        plot_exp10_motion_transitions(results[10])
+    if results[11] is not None and not results[11].empty:
+        plot_exp11_pareto(results[11])
 
     total = time.time() - t_start
     print(f"\n\nAll experiments complete in {total / 60:.1f} minutes.")

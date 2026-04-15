@@ -41,8 +41,8 @@ def main() -> None:
         epilog=__doc__,
     )
     parser.add_argument(
-        "--exp", type=int, required=True, choices=range(1, 7),
-        help="Experiment number (1–6)",
+        "--exp", type=int, required=True, choices=range(1, 12),
+        help="Experiment number (1–11)",
     )
     parser.add_argument(
         "--dataset", default=None, choices=["euroc", "kitti", "tumvi"],
@@ -107,6 +107,31 @@ def main() -> None:
     elif args.exp == 6:
         from src.experiments.exp2_6 import run_exp6
         df = run_exp6(config)
+        print(df.to_string())
+
+    elif args.exp == 7:
+        from src.experiments.extended_experiments import run_exp7_outage_robustness
+        df = run_exp7_outage_robustness(config)
+        print(df.to_string())
+
+    elif args.exp == 8:
+        from src.experiments.extended_experiments import run_exp8_latency_jitter
+        df = run_exp8_latency_jitter(config)
+        print(df.to_string())
+
+    elif args.exp == 9:
+        from src.experiments.extended_experiments import run_exp9_resource_budget
+        df = run_exp9_resource_budget(config)
+        print(df.to_string())
+
+    elif args.exp == 10:
+        from src.experiments.extended_experiments import run_exp10_motion_transitions
+        df = run_exp10_motion_transitions(config)
+        print(df.to_string())
+
+    elif args.exp == 11:
+        from src.experiments.extended_experiments import run_exp11_pareto
+        df = run_exp11_pareto(config)
         print(df.to_string())
 
 
