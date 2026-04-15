@@ -1,65 +1,53 @@
-
 """
 src/experiments/exp1_baseline_comparison.py
 
 Experiment 1: Core baseline comparison.
-By default this file runs only the paper-safe baselines.
-Advanced baselines can be included explicitly for repo-only or appendix runs.
+Runs all methods on selected (or all) sequences across selected datasets.
+Produces the primary results table: VR, RMSE, ESR, RR.
 """
 
+import json
 import re
 import numpy as np
 import pandas as pd
 from pathlib import Path
 
-# Paper-safe baselines
-from ..baselines.main import (
+from baselines.main import (
     FixedHighScheduler,
     FixedLowScheduler,
     FixedMatchedScheduler,
     HeuristicAdaptiveScheduler,
-    AoIMinScheduler,
-    PeriodicOptimalScheduler,
     EventTriggeredScheduler,
+)
+from baselines.advanced import (
+    AoIMinScheduler,
+    WhittleIndexScheduler,
+    PeriodicOptimalScheduler,
+    CDKFGradientScheduler,
+    MIQPOptimalScheduler,
+    DRLScheduler,
     DelayAwarePolicyScheduler,
 )
+from scheduler.sb_sched import StalenessScheduler
+from datasets.models import get_model
+from experiments.runner import run_single
+from utils.metrics import summarise_results
 
-# Advanced / research baselines (kept optional)
-try:
-    from ..baselines.advanced import (
-        WhittleIndexScheduler,
-        CDKFGradientScheduler,
-        MIQPOptimalScheduler,
-        DRLScheduler,
-    )
-    _HAS_ADVANCED = True
-except Exception:
-    _HAS_ADVANCED = False
-
-from ..scheduler.sb_sched import StalenessScheduler
-from ..datasets.models import get_model
-from .runner import run_single
-from ..utils.metrics import summarise_results
-
-
-PAPER_METHODS = {
+METHODS = {
     "fixed_high":    (FixedHighScheduler,    {}),
     "fixed_low":     (FixedLowScheduler,     {}),
     "fixed_matched": (FixedMatchedScheduler, {"native_rates": None}),
     "heuristic":     (HeuristicAdaptiveScheduler, {}),
     "aoi_min":       (AoIMinScheduler,       {}),
+    "whittle":       (WhittleIndexScheduler, {"Q_diag": None}),
     "periodic_opt":  (PeriodicOptimalScheduler, {"native_rates": None}),
     "event_trigger": (EventTriggeredScheduler, {}),
+    "cd_kf":         (CDKFGradientScheduler, {"native_rates": None}),
+    "miqp_opt":      (MIQPOptimalScheduler,  {"native_rates": None}),
+    "drl_sched":     (DRLScheduler,          {}),
     "delay_aware":   (DelayAwarePolicyScheduler, {}),
     "sb_sched":      (StalenessScheduler,    {}),
 }
-
-ADVANCED_METHODS = {
-    "whittle":   (WhittleIndexScheduler, {"Q_diag": None}),
-    "cd_kf":     (CDKFGradientScheduler, {"native_rates": None}),
-    "miqp_opt":  (MIQPOptimalScheduler,  {"native_rates": None}),
-    "drl_sched": (DRLScheduler,          {}),
-} if _HAS_ADVANCED else {}
 
 SEQUENCES = {
     "euroc": ["MH_01_easy", "MH_02_easy", "MH_03_medium",
@@ -80,6 +68,13 @@ def parse_kitti_sequence(sequence: str) -> tuple[str, str]:
     """
     Parse a KITTI sequence string of the form
     '2011_09_26_drive_0001_sync' into (date, drive).
+
+    Returns:
+        date  – e.g. "2011_09_26"
+        drive – e.g. "0001"
+
+    Raises:
+        ValueError if the string does not match the expected pattern.
     """
     m = re.fullmatch(
         r"(\d{4}_\d{2}_\d{2})_drive_(\d{4})_sync",
@@ -93,85 +88,27 @@ def parse_kitti_sequence(sequence: str) -> tuple[str, str]:
     return m.group(1), m.group(2)
 
 
-def _native_rates_for(dataset: str) -> dict[str, float]:
-    return {
-        "euroc":  {"camera": 20.0, "imu": 200.0},
-        "kitti":  {"gps": 10.0,    "imu": 100.0},
-        "tumvi":  {"camera": 20.0, "imu": 200.0},
-    }[dataset]
-
-
-
-
-def _resolve_dataset_root(config: dict, dataset: str) -> str:
-    configured = Path(config["datasets"][dataset]["root"]).expanduser()
-    if configured.exists():
-        return str(configured)
-
-    project_root = Path(__file__).resolve().parents[2]
-    local_map = {"euroc": "euroc", "kitti": "kitti_raw", "tumvi": "tumvi"}
-    local_root = project_root / "data" / local_map[dataset]
-    if local_root.exists():
-        print(f"[info] Using bundled data path for {dataset}: {local_root}")
-        return str(local_root)
-
-    return str(configured)
-
-def _resolve_methods(include_advanced: bool) -> dict[str, tuple[type, dict]]:
-    methods = dict(PAPER_METHODS)
-    if include_advanced:
-        if not _HAS_ADVANCED:
-            raise ImportError(
-                "Advanced baselines requested, but '..baselines.advanced' "
-                "could not be imported."
-            )
-        methods.update(ADVANCED_METHODS)
-    return methods
-
-
-def _inject_runtime_kwargs(dataset: str, base_kwargs: dict, native_rates: dict) -> dict:
-    """
-    Fill runtime-dependent kwargs without mutating the source dict.
-    """
-    kwargs = dict(base_kwargs)
-
-    if "native_rates" in kwargs:
-        kwargs["native_rates"] = native_rates
-
-    if "Q_diag" in kwargs:
-        model_fn = get_model(dataset)
-        _, Q, _, _, _ = model_fn()
-        kwargs["Q_diag"] = np.diag(Q)
-
-    return kwargs
-
-
 def run_exp1(
     config: dict,
     results_dir: str = "results/exp1",
     filter_dataset: str | None = None,
     filter_sequence: str | None = None,
-    include_advanced: bool = True,
 ) -> pd.DataFrame:
     """
     Run Experiment 1 across methods, datasets, and sequences.
 
     Args:
-        config: Loaded YAML config dict.
-        results_dir: Directory for CSV outputs.
-        filter_dataset: Restrict to one dataset ("euroc", "kitti", "tumvi").
-        filter_sequence: Restrict to one sequence name.
-        include_advanced:
-            True  -> run the full historical comparison set, including advanced baselines.
-            False -> run only the paper-safe baseline subset.
-
+        config:          Loaded YAML config dict
+        results_dir:     Directory for CSV outputs
+        filter_dataset:  If given, restrict to this dataset ("euroc", "kitti", "tumvi")
+        filter_sequence: If given, restrict to this single sequence name
     Returns:
-        DataFrame with all results.
+        DataFrame with all results
     """
     Path(results_dir).mkdir(parents=True, exist_ok=True)
-    methods = _resolve_methods(include_advanced)
     all_results = []
 
+    # ── Dataset filter ────────────────────────────────────────────────────
     sequences_to_run = {
         ds: seqs
         for ds, seqs in SEQUENCES.items()
@@ -184,6 +121,8 @@ def run_exp1(
         )
 
     for dataset, sequences in sequences_to_run.items():
+
+        # ── Sequence filter ───────────────────────────────────────────────
         if filter_sequence is not None:
             if filter_sequence not in sequences:
                 print(
@@ -193,17 +132,20 @@ def run_exp1(
                 continue
             sequences = [filter_sequence]
 
-        root = _resolve_dataset_root(config, dataset)
-        native_rates = _native_rates_for(dataset)
-        p_max_multiplier = float(config.get("experiments", {}).get("p_max_multiplier", 3.0))
+        root = config["datasets"][dataset]["root"]
+        native_rates = {
+            "euroc":  {"camera": 20.0, "imu": 200.0},
+            "kitti":  {"gps": 10.0,    "imu": 100.0},
+            "tumvi":  {"camera": 20.0, "imu": 200.0},
+        }[dataset]
 
-        # First pass: always run fixed_high to define reference ESR / RR baseline
+        # ── First pass: Fixed-High to get baseline ESR ────────────────────
         fixed_high_results = {}
         for seq in sequences:
-            loader_kw = {}
+            kw = {}
             if dataset == "kitti":
                 date, drive = parse_kitti_sequence(seq)
-                loader_kw = {"date": date, "drive": drive}
+                kw = {"date": date, "drive": drive}
 
             result = run_single(
                 scheduler_cls=FixedHighScheduler,
@@ -212,18 +154,24 @@ def run_exp1(
                 sequence=seq,
                 dataset_root=root,
                 method_name="fixed_high",
-                p_max_multiplier=p_max_multiplier,
-                **loader_kw,
+                **kw,
             )
             fixed_high_results[seq] = result.esr
             all_results.append(result)
 
-        # Second pass: all remaining selected methods
-        for method_name, (cls, base_kwargs) in methods.items():
+        # ── Second pass: all other methods ────────────────────────────────
+        for method_name, (cls, base_kwargs) in METHODS.items():
             if method_name == "fixed_high":
-                continue
+                continue  # Already done above
 
-            kwargs = _inject_runtime_kwargs(dataset, base_kwargs, native_rates)
+            # Inject runtime-dependent kwargs (shallow-copy to avoid mutation)
+            kwargs = dict(base_kwargs)
+            if "native_rates" in kwargs:
+                kwargs["native_rates"] = native_rates
+            if "Q_diag" in kwargs:
+                model_fn = get_model(dataset)
+                _, Q, _, _, _ = model_fn()
+                kwargs["Q_diag"] = np.diag(Q)
 
             for seq in sequences:
                 loader_kw = {}
@@ -238,7 +186,6 @@ def run_exp1(
                     sequence=seq,
                     dataset_root=root,
                     method_name=method_name,
-                    p_max_multiplier=p_max_multiplier,
                     fixed_high_esr=fixed_high_results.get(seq),
                     **loader_kw,
                 )
@@ -250,12 +197,11 @@ def run_exp1(
                 )
 
     if not all_results:
-        print(
-            "[warn] No results collected — check dataset/sequence filters "
-            "and that the dataset root path is correct."
-        )
+        print("[warn] No results collected — check dataset/sequence filters "
+              "and that the dataset root path is correct.")
         return pd.DataFrame()
 
+    # ── Build result DataFrame ────────────────────────────────────────────
     rows = []
     for r in all_results:
         sensor_names = list(r.esr.keys())
@@ -268,23 +214,13 @@ def run_exp1(
             "p_max":    r.p_max,
         }
         for sname in sensor_names:
-            row[f"esr_{sname}"] = r.esr.get(sname, 0)
-            row[f"rr_{sname}"] = r.rate_reduction.get(sname, 0)
-
-        primary_sensor = next((name for name in ("camera", "gps") if name in r.esr), None)
-        row["esr_measurement"] = r.esr.get(primary_sensor, np.nan) if primary_sensor else np.nan
-        row["rr_measurement"] = r.rate_reduction.get(primary_sensor, np.nan) if primary_sensor else np.nan
-        row.setdefault("esr_camera", np.nan)
-        row.setdefault("rr_camera", np.nan)
-        row.setdefault("esr_gps", np.nan)
-        row.setdefault("rr_gps", np.nan)
+            row[f"esr_{sname}"]  = r.esr.get(sname, 0)
+            row[f"rr_{sname}"]   = r.rate_reduction.get(sname, 0)
         rows.append(row)
 
     df = pd.DataFrame(rows)
-    output_name = "exp1_results.csv" if include_advanced else "exp1_results_paper_only.csv"
-    out_path = Path(results_dir) / output_name
-    df.to_csv(out_path, index=False)
-    print(f"\nResults saved to {out_path}")
+    df.to_csv(f"{results_dir}/exp1_results.csv", index=False)
+    print(f"\nResults saved to {results_dir}/exp1_results.csv")
 
     summary = summarise_results(all_results)
     print("\n--- Summary ---")

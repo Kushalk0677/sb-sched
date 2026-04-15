@@ -14,9 +14,9 @@ import pandas as pd
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.plotting import (
+from src.utils.plotting import (
     plot_exp1_vr_rr,
     plot_exp2_pmax_sensitivity,
     plot_exp4_motion_stress,

@@ -1,60 +1,40 @@
-# configs/datasets.yaml
-# Set these paths after downloading the datasets
+# configs/config.yaml
+#
+# Set dataset root paths to your local copies of each dataset.
+# Relative paths are resolved from the project root.
+# Use forward slashes even on Windows.
+#
+# EuRoC:  https://projects.asl.ethz.ch/datasets/euroc-mav/
+# KITTI:  https://www.cvlibs.net/datasets/kitti/raw_data.php
+# TUM-VI: https://vision.in.tum.de/data/datasets/visual-inertial-dataset
 
 datasets:
   euroc:
     root: "D:/data/euroc"
-    sequences:
-      easy:   [MH_01_easy, MH_02_easy, V1_01_easy, V2_01_easy]
-      medium: [MH_03_medium, MH_04_medium, V1_02_medium, V2_02_medium]
-      hard:   [MH_05_difficult, V1_03_difficult, V2_03_difficult]
-    imu_hz: 200
-    cam_hz: 20
-
   kitti:
     root: "D:/data/kitti_raw"
-    sequences:
-      city:        ["2011_09_26_drive_0001_sync",
-                    "2011_09_26_drive_0002_sync",
-                    "2011_09_26_drive_0005_sync"]
-      residential: ["2011_09_26_drive_0019_sync",
-                    "2011_09_26_drive_0020_sync"]
-      road:        ["2011_09_26_drive_0027_sync",
-                    "2011_09_26_drive_0028_sync"]
-      campus:      ["2011_09_28_drive_0001_sync",
-                    "2011_09_28_drive_0002_sync"]
-    imu_hz: 100
-    gps_hz: 10
-
   tumvi:
     root: "D:/data/tumvi"
-    sequences:
-      room:     [room1, room2, room3, room4, room5, room6]
-      corridor: [corridor1, corridor2, corridor3, corridor4, corridor5]
-    imu_hz: 200
-    cam_hz: 20
 
-# configs/experiments.yaml
 experiments:
-  p_max_multiplier: 3.0      # Default P_max = 3x steady-state covariance
-  p_max_sweep: [1.5, 2.0, 3.0, 5.0, 10.0]  # For Experiment 2
-  rate_asymmetry_factors: [1, 2]             # For Experiment 3 (1x and 2x subsampling)
+  p_max_multiplier: 3.0
+  p_max_sweep: [1.5, 2.0, 3.0, 5.0, 10.0]
+  rate_asymmetry_factors: [10, 20]
   random_seed: 42
   results_dir: "results/"
-  log_level: "INFO"
 
 baselines:
   heuristic:
-    up_threshold: 1.5    # Multiply P_max — raise rate if trace(P) > up_threshold * P_max
-    down_threshold: 0.5  # Lower rate if trace(P) < down_threshold * P_max
+    up_threshold: 1.5
+    down_threshold: 0.5
   event_trigger:
-    innovation_threshold: 3.0   # Sigma multiplier for innovation gate
+    innovation_threshold: 3.0
   aoi_min:
-    max_age: 10          # Maximum allowed AoI in timesteps
+    max_age: 10
   whittle:
-    discount: 0.99       # Discount factor for Whittle index computation
+    discount: 0.99
   cd_kf:
-    lr: 1e-3             # Learning rate for gradient optimisation
-    n_steps: 500         # Optimisation steps
+    lr: 1.0e-3
+    n_steps: 500
   periodic_opt:
-    grid_points: 20      # Number of rate values to search per sensor
+    grid_points: 20

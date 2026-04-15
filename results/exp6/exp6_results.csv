@@ -1,0 +1,16 @@
+method,dataset,sequence,vr,rmse_m,rate_reduction,esr_camera
+fixed_high,euroc_ekf,MH_01_easy,0.0,0.13899120369625723,{'camera': 0.0},20.0
+heuristic,euroc_ekf,MH_01_easy,0.0,0.2257298189604912,{'camera': 50.0},10.0
+sb_sched,euroc_ekf,MH_01_easy,0.0,0.2639572688841842,{'camera': 58.30610021786493},8.338779956427015
+fixed_high,euroc_ekf,MH_02_easy,0.0,0.1445264049231079,{'camera': 0.0},20.0
+heuristic,euroc_ekf,MH_02_easy,0.0,0.23788286423290445,{'camera': 50.0},10.0
+sb_sched,euroc_ekf,MH_02_easy,0.0,0.2734556564771474,{'camera': 58.415841584158414},8.316831683168317
+fixed_high,euroc_ekf,MH_03_medium,0.0,0.2150291519964374,{'camera': 0.0},19.993964086313568
+heuristic,euroc_ekf,MH_03_medium,0.0,0.33103188744194306,{'camera': 50.0},9.996982043156784
+sb_sched,euroc_ekf,MH_03_medium,0.0,0.38214980901217405,{'camera': 60.18569493255846},7.960457856399584
+fixed_high,euroc_ekf,MH_04_medium,0.0,0.18944628876853845,{'camera': 0.0},20.0
+heuristic,euroc_ekf,MH_04_medium,0.0,0.32735220905243034,{'camera': 50.0},10.0
+sb_sched,euroc_ekf,MH_04_medium,0.0,0.3656566019399903,{'camera': 59.940652818991104},8.01186943620178
+fixed_high,euroc_ekf,MH_05_difficult,0.0,0.17404876257674956,{'camera': 0.0},19.99909995049728
+heuristic,euroc_ekf,MH_05_difficult,0.0,0.29878392471085224,{'camera': 50.0},9.99954997524864
+sb_sched,euroc_ekf,MH_05_difficult,0.0,0.3334374302322705,{'camera': 59.7700829275713},8.045621325317184

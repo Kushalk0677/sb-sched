@@ -39,12 +39,14 @@ def compute_rmse(estimates: np.ndarray, ground_truth: np.ndarray) -> float:
     return float(np.sqrt(np.mean(errors**2)))
 
 
-def compute_violation_rate(p_history: list, p_max: float) -> float:
-    """Fraction of timesteps where trace(P) exceeds p_max."""
+def compute_violation_rate(p_history: list, p_max: float, warmup_steps: int = 100) -> float:
+    """Fraction of post-warmup timesteps where trace(P) exceeds p_max."""
     if not p_history:
         return 0.0
-    return sum(1 for p in p_history if p > p_max) / len(p_history)
-
+    post = p_history[warmup_steps:]
+    if not post:
+        return 0.0
+    return sum(1 for p in post if p > p_max) / len(post)
 
 def compute_rate_reduction(esr_method: dict, esr_fixed_high: dict) -> dict:
     """

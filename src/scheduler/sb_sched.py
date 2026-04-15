@@ -153,7 +153,7 @@ class StalenessScheduler:
 
         return triggered
 
-    def effective_sample_rates(self, total_steps: int, dt: float) -> dict:
+    def effective_sample_rates(self, total_steps: int, dt: float, warmup_steps: int | None = None) -> dict:
         """
         Compute effective sampling rate (Hz) for each sensor.
         Only counts post-warmup triggers to match VR metric.
@@ -165,14 +165,15 @@ class StalenessScheduler:
         total_time = max(total_steps - self.warmup_steps, 1) * dt
         return {name: counts[name] / total_time for name in self.sensor_names}
 
-    def violation_rate(self, p_history: list) -> float:
+    def violation_rate(self, p_history: list, warmup_steps: int | None = None) -> float:
         """
         Fraction of post-warmup steps where trace(P) > p_max.
 
         Args:
             p_history: List of trace(P) values recorded after each predict+update.
         """
-        post = p_history[self.warmup_steps:]
+        warmup = self.warmup_steps if warmup_steps is None else max(0, int(warmup_steps))
+        post = p_history[warmup:]
         if not post:
             return 0.0
         return sum(1 for p in post if p > self.p_max) / len(post)

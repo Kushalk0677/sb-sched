@@ -28,6 +28,9 @@ METHOD_COLORS = {
     "periodic_opt":  "#a50026",
     "event_trigger": "#fee090",
     "cd_kf":         "#878787",
+    "miqp_opt":      "#b35806",   # Dark orange — strong offline baseline
+    "drl_sched":     "#542788",   # Purple — learning-based
+    "delay_aware":   "#35978f",   # Teal — closely related to ours
     "sb_sched":      "#1a9641",   # Green = ours
 }
 
@@ -41,8 +44,20 @@ METHOD_LABELS = {
     "periodic_opt":  "Periodic-Opt",
     "event_trigger": "Event-Triggered",
     "cd_kf":         "CD-KF Grad",
+    "miqp_opt":      "MIQP-Opt (Dutta \'23)",
+    "drl_sched":     "DRL Sched (Alali \'24)",
+    "delay_aware":   "Delay-Aware (arXiv \'26)",
     "sb_sched":      "SB-Sched (ours)",
 }
+
+# Canonical display order for bar charts (ours last)
+METHOD_ORDER = [
+    "fixed_high", "fixed_low", "fixed_matched",
+    "heuristic", "aoi_min", "whittle",
+    "periodic_opt", "event_trigger", "cd_kf",
+    "miqp_opt", "drl_sched", "delay_aware",
+    "sb_sched",
+]
 
 
 def plot_exp1_vr_rr(df: pd.DataFrame, out_dir: str = "results/exp1"):
@@ -51,7 +66,7 @@ def plot_exp1_vr_rr(df: pd.DataFrame, out_dir: str = "results/exp1"):
     """
     Path(out_dir).mkdir(parents=True, exist_ok=True)
     datasets = df["dataset"].unique()
-    methods  = df["method"].unique()
+    methods  = [m for m in METHOD_ORDER if m in df["method"].unique()]
 
     fig, axes = plt.subplots(1, len(datasets), figsize=(14, 4), sharey=False)
 
@@ -93,11 +108,15 @@ def plot_exp2_pmax_sensitivity(df: pd.DataFrame, out_dir: str = "results/exp2"):
         color = METHOD_COLORS.get(method, "grey")
         label = METHOD_LABELS.get(method, method)
 
-        # ESR (pick first sensor column found)
-        esr_cols = [c for c in sub.columns if c.startswith("esr_")]
-        if esr_cols:
-            esr_vals = sub[esr_cols[0]].values
+        # ESR: prefer the dataset-agnostic measurement column when available
+        if "esr_measurement" in sub.columns:
+            esr_vals = sub["esr_measurement"].values
             ax1.plot(sub["p_max_mult"], esr_vals, "-o", color=color, label=label)
+        else:
+            esr_cols = [c for c in sub.columns if c.startswith("esr_")]
+            if esr_cols:
+                esr_vals = sub[esr_cols[0]].values
+                ax1.plot(sub["p_max_mult"], esr_vals, "-o", color=color, label=label)
 
         ax2.plot(sub["p_max_mult"], sub["vr"].values * 100,
                  "-o", color=color, label=label)
@@ -163,7 +182,14 @@ def plot_exp5_overhead(df: pd.DataFrame, out_dir: str = "results/exp5"):
     """
     Path(out_dir).mkdir(parents=True, exist_ok=True)
     fig, ax = plt.subplots(figsize=(7, 3))
-    colors = ["#2c7bb6", "#2c7bb6", "#1a9641", "#fdae61"]
+    color_map = {
+        "KF predict": "#2c7bb6",
+        "KF update": "#2c7bb6",
+        "SB-Sched idle step": "#1a9641",
+        "SB-Sched budget": "#1a9641",
+        "Heuristic idle step": "#fdae61",
+    }
+    colors = [color_map.get(op, "#878787") for op in df["operation"]]
     ax.barh(df["operation"], df["time_us"], color=colors, edgecolor="black")
     ax.set_xlabel("Time (µs)")
     ax.set_title("Per-Step Computational Overhead")

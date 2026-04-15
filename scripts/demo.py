@@ -17,13 +17,13 @@ import matplotlib.pyplot as plt
 import matplotlib
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 matplotlib.rcParams.update({"font.size": 10, "figure.dpi": 120})
 
-from kalman.kalman_filter import KalmanFilter, SensorModel
-from scheduler.sb_sched import StalenessScheduler
-from baselines.baselines import (
+from src.kalman.kalman_filter import KalmanFilter, SensorModel
+from src.scheduler.sb_sched import StalenessScheduler
+from src.baselines.baselines import (
     FixedHighScheduler, FixedLowScheduler, FixedMatchedScheduler,
     HeuristicAdaptiveScheduler, AoIMinScheduler,
     EventTriggeredScheduler,
