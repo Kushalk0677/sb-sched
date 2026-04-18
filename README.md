@@ -293,8 +293,7 @@ results/demo/
 @article{khemani2025sbsched,
   title   = {Predictive Uncertainty-Bounded Sensor Activation for Rate-Constrained Robotic and Chemical Sensing},
   author  = {Khemani, Kushal and Jain, Daksh and Raines, Jackson and Khan, Rakin and Rizvi, Syed Hamzah},
-  year    = {2025},
-  doi     = {10.1109/LSENS.202X.0000000}
+  year    = {2026},
 }
 ```
 
