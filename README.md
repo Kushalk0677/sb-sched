@@ -1,81 +1,219 @@
-# SB-Sched: Covariance-Bounded Adaptive Update Scheduling for State Estimators
+# SB-Sched: Predictive Uncertainty-Bounded Sensor Activation for Rate-Constrained Robotic and Chemical Sensing
 
-SB-Sched is a covariance-aware scheduling framework for Kalman-filter-based state estimation. Instead of consuming every available low-rate measurement on a fixed timetable, it predicts covariance growth and triggers updates only when they are needed to stay within a user-defined uncertainty budget.
+**SB-Sched** is a predictive sensor activation policy that anticipates covariance-bound crossings and schedules acquisitions before violations occur, using only the current covariance trace and a user-defined budget *P*_max. It is evaluated on robotic (EuRoC, KITTI) and chemical sensing datasets, including **CGD-30**, a new 31-day continuous gas-sensing field dataset.
 
-This repository contains the scheduler, baseline policies, dataset loaders, experiment runners, saved example results, and supporting documentation used to study **measurement-efficiency versus estimation-quality tradeoffs**.
+> **Paper:** Khemani, K., Jain, D., Raines, J., Khan, R., & Rizvi, S. H. (2025). *Predictive Uncertainty-Bounded Sensor Activation for Rate-Constrained Robotic and Chemical Sensing.*
+>
+> **Code & Data:** [github.com/Kushalk0677/sb-sched](https://github.com/Kushalk0677/sb-sched)
+
+---
+
+## Authors
+
+| Name | Role | Email | ORCID |
+|---|---|---|---|
+| **Kushal Khemani** | Framework, methodology, experiments, supervision | kushal.khemani@gmail.com | [0009-0005-5988-6656](https://orcid.org/0009-0005-5988-6656) |
+| **Daksh Jain** | Related work, limitations | primary.jaindaksh@gmail.com | [0009-0005-8620-0701](https://orcid.org/0009-0005-8620-0701) |
+| **Jackson Raines** | Theoretical components | raines.jackson.w@gmail.com | [0009-0002-4574-4102](https://orcid.org/0009-0002-4574-4102) |
+| **Rakin Khan** | Mathematical formulation | khanr5@kgv.hk | [0009-0003-5732-5404](https://orcid.org/0009-0003-5732-5404) |
+| **Syed Hamzah Rizvi** | Figure design | syedhamzah08@gmail.com | [0009-0004-9864-6607](https://orcid.org/0009-0004-9864-6607) |
+
+*All authors are independent researchers.*
+
+---
+
+## Abstract
+
+Many sensor systems operate under strict acquisition-rate, energy, or bandwidth constraints, where reactive threshold-based activation often responds too late to prevent reliability violations. SB-Sched anticipates covariance-budget crossings and schedules acquisitions one step early, absorbing delivery delay. Under matched sensing budgets, SB-Sched reduces violation rate by **2.2×** over the strongest reactive baseline and, under fixed delivery delay, is the **only tested policy to maintain zero violations** across all datasets, including long-horizon field sensing. The policy incurs minimal overhead (≈1.15× a Kalman predict step), making it practical for resource-constrained sensor systems.
+
+---
 
 ## What this repository is for
 
-This codebase is best understood as a **scheduling and systems testbed**, not a full visual-inertial or SLAM stack.
+This codebase is a **scheduling and systems testbed**, not a full visual-inertial or SLAM stack.
 
-The main question it answers is:
+The central question it answers is:
 
 > Given a high-rate prediction loop and lower-rate measurements, when should the estimator consume a measurement to maintain a covariance budget while minimising sensing cost?
 
-That is the contribution the code supports.
-
-## Important framing
+### Important framing
 
 This repository does **not** implement end-to-end sensor fusion in the strongest robotics sense.
 
 - For **EuRoC** and **TUM-VI**, the low-rate `camera` updates are oracle-style pseudo-measurements derived from ground-truth interpolation. They are used to isolate scheduler behaviour from front-end perception noise.
-- For **EuRoC** and **TUM-VI**, IMU values primarily drive the prediction cadence inside a simplified estimator testbed rather than a full visual-inertial front-end.
 - For **KITTI Raw**, the measurement stream is physically grounded GPS/pose-derived data, but evaluation should still be read as estimator-consistency and scheduling behaviour rather than a claim to outperform production navigation pipelines.
 
-So the correct reading of the results is:
+The correct reading of the results is:
 
-- strong evidence about **covariance-aware adaptive scheduling**
-- useful evidence about **resource-constrained estimation behaviour**
-- not a claim to replace a full SLAM, VIO, or production fusion system
+- Strong evidence about **covariance-aware adaptive scheduling**
+- Useful evidence about **resource-constrained estimation behaviour**
+- Not a claim to replace a full SLAM, VIO, or production fusion system
 
 A fuller explanation is in `docs/FRAMING_AND_LIMITATIONS.md`.
 
-## Repository contents
+---
 
-- SB-Sched scheduler implementation
-- Fixed, heuristic, event-triggered, and delay-aware baselines
-- Linear KF path and EKF extension path
-- Dataset loaders for EuRoC, KITTI Raw, and TUM-VI
-- Experiment runners for Exp 1–11
-- Plotting utilities and saved result artifacts
-- Unit tests for scheduler and core mechanics
-- Supporting documentation under `docs/`
+## Datasets
 
-## Experiments included
+| Dataset | Description | N | Source |
+|---|---|---|---|
+| **EuRoC MAV** | IMU at 200 Hz, stereo camera at 20 Hz, Vicon ground truth | — | [Burri et al., 2016](https://doi.org/10.1177/0278364916652421) |
+| **KITTI Raw** | GPS/IMU at 100 Hz with RTK ground truth | — | [Geiger et al., 2013](https://doi.org/10.1177/0278364913491297) |
+| **UCI Gas Sensor Array Drift** | 16 metal-oxide sensors over 36 months | 13,910 | [Fonollosa et al., 2015](https://doi.org/10.1016/j.snb.2015.03.028) |
+| **CGD-30** *(new)* | 31-day continuous field gas-sensing stream, 1-min resolution | 44,640 | This work |
 
-### Exp 1–6
-These are the original baseline, sensitivity, asymmetry, motion-stress, overhead, and EKF-extension experiments.
+---
 
-### Exp 7 — Outage robustness
-Tests behaviour under random drops and burst blackouts.
+## CGD-30: Continuous Gas Deployment Dataset
 
-### Exp 8 — Latency and jitter robustness
-Tests delayed measurements, jitter, and combined delay-plus-dropout stress cases.
+CGD-30 is a new field dataset introduced alongside this paper, designed as a **stress-test benchmark for long-horizon sensor scheduling** under real-world deployment conditions.
 
-### Exp 9 — Resource-budgeted scheduling
-Tests quality preservation under hard measurement budgets.
+### Overview
 
-### Exp 10 — Motion regime transitions
-Segments the trajectory into low / medium / high motion regimes and measures trigger behaviour and transition lag.
+| Property | Value |
+|---|---|
+| Duration | 31 days (April 1 – May 1, 2025) |
+| Total samples | 446,400 (44,640 per channel) |
+| Resolution | 1 sample per minute |
+| Sensor array | 10 MQ-series metal-oxide sensors (MQ-2, MQ-3, MQ-4, MQ-5, MQ-6, MQ-7, MQ-8, MQ-9, MQ-135, MQ-136) |
+| Hardware | 10 Arduino nodes (ARD_01 – ARD_10) |
+| Signals recorded | ADC value, voltage, resistance, normalised *r*_s/*r*_0 ratio, temperature, humidity |
+| Gas species | LPG, butane |
+| Concentration range | 350 – 900 ppm |
+| Temperature range | 18 °C – 43 °C |
+| Humidity range | 24.9 % – 90.0 % RH |
 
-### Exp 11 — Pareto analysis
-Builds Pareto frontiers over sensing rate, estimation error, and constraint-violation severity for the newer experiment families.
+Data collected by K. Khemani
 
-## What the results support best
+### Controlled Events
 
-The strongest supported claims in this repository are:
+The dataset includes **40 logged gas exposure events** with precise start/end timestamps, baseline windows, and metadata. Events span five enclosure conditions and seven perturbation profiles:
 
-1. **SB-Sched can reduce effective low-rate measurement usage substantially** relative to dense or fixed-rate sensing.
-2. **Under tight but feasible sensing budgets, SB-Sched can allocate updates more effectively than several fixed and reactive baselines.**
-3. **SB-Sched often lies on the Pareto frontier** of sensing rate versus quality-loss metrics, especially in budgeted settings.
-4. The framework is most compelling when framed as **adaptive update scheduling under uncertainty and resource constraints**.
+**Enclosure conditions:** sealed chamber, open ventilation, temperature variation, humidity controlled, low temperature
 
-The repository does **not** support broad claims such as:
+**Perturbation profiles:** none (baseline), gradual release, temperature sweeps (10–30 °C, 20–35 °C), humidity levels (45 % RH, 75 % RH), cold test (5 °C)
 
-- “best end-to-end sensor fusion system”
-- “best overall state-estimation accuracy”
-- “full visual-inertial odometry benchmark”
-- “provably fewer reads than any fixed-rate policy”
+Event metadata is in `data/onemonth_gas/event_log.csv`. Raw sensor readings are in `data/onemonth_gas/gas_sensor_dataset.csv`.
+
+### Why CGD-30 matters
+
+Most sensing literature evaluates scheduling policies on short-horizon sequences or controlled lab conditions where drift is stationary and gaps are synthetic. CGD-30 exposes the failure modes these settings hide:
+
+- **Nonstationary diurnal cycles** — temperature-coupled drift repeating daily with varying amplitude
+- **Poisoning–recovery transients** — sensor response degrades and recovers across multi-hour windows
+- **Real acquisition gaps** — uncontrolled missing-data intervals reflecting genuine deployment irregularities
+- **Long-horizon drift** — slow baseline shift accumulating over weeks, not minutes
+
+Under these conditions, Event-Trigger reaches VR = 0.333 even in the nominal case — a structural failure, not a tuning problem. SB-Sched maintains VR = 0 under both nominal and delayed conditions across the full 31-day stream.
+
+> A policy that cannot handle 31 days of uncontrolled variation should not be deployed in long-horizon IoT applications.
+
+### File Structure
+
+```
+data/onemonth_gas/
+├── gas_sensor_dataset.csv   # 446,400 rows — per-minute readings from all 10 sensors
+└── event_log.csv            # 40 annotated gas exposure events with metadata
+```
+
+### Schema
+
+`gas_sensor_dataset.csv`:
+
+| Column | Description |
+|---|---|
+| `timestamp` | UTC datetime, 1-minute resolution |
+| `arduino_id` | Node identifier (ARD_01 – ARD_10) |
+| `sensor_type` | MQ sensor model |
+| `sensor_id` | Integer index (0–9) |
+| `adc_value` | Raw 10-bit ADC reading |
+| `voltage` | Computed voltage (V) |
+| `resistance` | Sensor resistance (Ω) |
+| `rs_r0_ratio` | Normalised resistance ratio used for scheduling |
+| `temperature` | Ambient temperature (°C) |
+| `humidity` | Relative humidity (%) |
+
+`event_log.csv`:
+
+| Column | Description |
+|---|---|
+| `event_id` | Unique event identifier |
+| `start_time` / `end_time` | Exposure window |
+| `gas_type` | LPG or butane |
+| `baseline_before_*` / `baseline_after_*` | Pre/post baseline windows |
+| `enclosure_condition` | Deployment environment |
+| `gas_concentration` | Target concentration (ppm) |
+| `perturbation` | Applied environmental stress |
+| `notes` | Free-text annotation |
+
+---
+
+## Key Results
+
+### Budget-Constrained Activation (KITTI Raw @ 2 Hz)
+
+| Method | VR | RMSE (m) | AOT (×10⁻³) |
+|---|---|---|---|
+| Fixed-Low | 0.306 | 0.708 | 4.98 |
+| Fixed-Matched | 0.275 | 0.694 | 4.00 |
+| Heuristic | 0.306 | 0.714 | 4.98 |
+| Event-Trigger | 0.196 | 0.707 | 2.61 |
+| Delay-Aware | 0.210 | 0.683 | 2.29 |
+| **SB-Sched** | **0.140** | **0.662** | **0.99** |
+
+*VR = Violation Rate; AOT = Area Over Threshold.*
+
+### Cross-Domain Results Under Delay (SB-Sched vs. Event-Trigger)
+
+| Dataset | SB-Sched VR | Event-Trigger VR |
+|---|---|---|
+| EuRoC (+Delay) | **0.000** | 0.001 |
+| KITTI (+Delay) | **0.000** | 0.004 |
+| UCI Gas (+Delay) | **0.000** | 0.135 |
+| CGD-30 (+Delay) | **0.000** | 0.333 |
+
+SB-Sched is the **only tested policy** to achieve zero violations under fixed delivery delay on every dataset.
+
+---
+
+## Repository Contents
+
+```
+main_repo/
+├── configs/            # Dataset roots and experiment settings
+├── data/               # Raw datasets (EuRoC, KITTI, UCI Gas, CGD-30)
+├── docs/               # Extended documentation
+│   ├── PROJECT_OVERVIEW.md
+│   ├── SB_Sched_Formal_Guarantee.md
+│   ├── experimental_pipeline.md
+│   ├── ekf_extension.md
+│   └── FRAMING_AND_LIMITATIONS.md
+├── results/            # Saved CSVs and figures (exp1–exp11, realism)
+├── scripts/            # Entry points: demo, run experiments, plot
+├── src/
+│   ├── baselines/      # Fixed, heuristic, event-triggered, delay-aware
+│   ├── datasets/       # Loaders for EuRoC, KITTI, UCI Gas, CGD-30
+│   ├── experiments/    # Exp 1–11 runners
+│   ├── kalman/         # Linear KF and EKF paths
+│   ├── scheduler/      # SB-Sched core implementation
+│   └── utils/          # Metrics and plotting utilities
+└── tests/              # Unit tests for scheduler and gas loaders
+```
+
+---
+
+## Experiments
+
+| Exp | Description |
+|---|---|
+| 1–6 | Baseline comparison, sensitivity, asymmetry, motion-stress, overhead, EKF extension |
+| 7 | Outage robustness (random drops, burst blackouts) |
+| 8 | Latency and jitter robustness (delay, jitter, combined stress) |
+| 9 | Resource-budgeted scheduling (hard measurement budgets) |
+| 10 | Motion regime transitions (low / medium / high) |
+| 11 | Pareto analysis (sensing rate vs. error vs. violation severity) |
+
+---
 
 ## Installation
 
@@ -86,84 +224,81 @@ pip install -r requirements.txt
 
 ## Configuration
 
-Dataset roots and experiment settings live in:
-
-```text
-configs/config.yaml
-```
-
-Example:
+Edit `configs/config.yaml` to point to your local dataset roots:
 
 ```yaml
 datasets:
   euroc:
-    root: "D:/data/euroc"
+    root: "path/to/euroc"
   kitti:
-    root: "D:/data/kitti_raw"
+    root: "path/to/kitti_raw"
   tumvi:
-    root: "D:/data/tumvi"
+    root: "path/to/tumvi"
 
 experiments:
   p_max_multiplier: 3.0
   p_max_sweep: [2.0, 3.0, 4.0, 5.0]
 ```
 
-## Running experiments
-
-Single experiment:
+## Running
 
 ```bash
+# Single experiment
 python scripts/run_experiment.py --exp 1
-python scripts/run_experiment.py --exp 7
-python scripts/run_experiment.py --exp 11
-```
 
-Full pipeline:
-
-```bash
+# Full pipeline
 python scripts/run_all.py
-```
 
-Generate plots from saved CSVs:
-
-```bash
+# Generate plots from saved CSVs
 python scripts/plot_results.py --all
-```
 
-Run tests:
-
-```bash
+# Tests
 pytest tests/ -v
+
+# Demo
+python scripts/demo.py
 ```
 
-## Output locations
+## Output Locations
 
-Results are written under:
-
-```text
-results/exp1/
-results/exp2/
-...
-results/exp11/
+```
+results/exp1/   through   results/exp11/
+results/realism/
+results/demo/
 ```
 
-## Suggested interpretation for readers and reviewers
+---
 
-If you are using this repository for a paper, project report, or portfolio, the safest and most accurate framing is:
+## What the Results Support
 
-> SB-Sched is a covariance-bounded adaptive update scheduler for Kalman-style estimators, evaluated in controlled multi-rate estimation testbeds to study sensing-efficiency and quality tradeoffs.
+**Supported claims:**
 
-That wording matches what the code actually demonstrates.
+1. SB-Sched can reduce effective low-rate measurement usage substantially relative to dense or fixed-rate sensing.
+2. Under tight sensing budgets, SB-Sched allocates updates more effectively than fixed and reactive baselines.
+3. SB-Sched lies on the Pareto frontier of sensing rate versus quality-loss metrics in budgeted settings.
+4. SB-Sched is the only tested policy to achieve zero violations under delivery delay across all four datasets.
 
-## Documentation
+**Not supported:**
 
-See:
+- Best end-to-end sensor fusion system
+- Best overall state-estimation accuracy
+- Full visual-inertial odometry benchmark
+- Provably fewer reads than any fixed-rate policy in all settings
 
-- `docs/PROJECT_OVERVIEW.md`
-- `docs/SB_Sched_Formal_Guarantee.md`
-- `docs/experimental_pipeline.md`
-- `docs/ekf_extension.md`
-- `docs/FRAMING_AND_LIMITATIONS.md`
+---
+
+## Citation
+
+```bibtex
+@article{khemani2025sbsched,
+  title   = {Predictive Uncertainty-Bounded Sensor Activation for Rate-Constrained Robotic and Chemical Sensing},
+  author  = {Khemani, Kushal and Jain, Daksh and Raines, Jackson and Khan, Rakin and Rizvi, Syed Hamzah},
+  year    = {2025},
+  doi     = {10.1109/LSENS.202X.0000000}
+}
+```
+
+---
 
 ## License
 

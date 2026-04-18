@@ -119,5 +119,36 @@ def get_model(dataset: str):
         return kitti_model
     elif dataset in ("tumvi", "tum_vi", "tum-vi"):
         return euroc_model   # same sensor pair as EuRoC
+    elif dataset in ("uci_gas", "uci-gas", "ucigas", "onemonth_gas", "onemonth-gas", "onemonthgas"):
+        return gas_signal_model
     else:
         raise ValueError(f"No model defined for dataset: {dataset!r}")
+
+# ---------------------------------------------------------------------------
+# Gas datasets: local linear trend model for one scalar sensor response
+# State: [signal, drift]
+# ---------------------------------------------------------------------------
+
+def gas_signal_model(sample_hz: float = 1.0, measurement_hz: float | None = None):
+    """Returns a lightweight 1-D gas-response tracking model.
+
+    The model tracks the selected gas sensor response as a latent signal with a
+    slowly varying drift term. It is intentionally simple: the aim is to test
+    the scheduler under real drift/noise, not to build a chemistry-specific
+    estimator.
+    """
+    dt = 1.0 / sample_hz
+    F = np.array([[1.0, dt], [0.0, 1.0]], dtype=float)
+    # Slightly generous process noise so covariance grows when updates are skipped
+    q_level = 2.5e-3
+    q_drift = 5.0e-4
+    Q = np.diag([q_level, q_drift]) * dt
+
+    H = np.array([[1.0, 0.0]], dtype=float)
+    R = np.array([[5.0e-3]], dtype=float)
+    native_hz = sample_hz if measurement_hz is None else measurement_hz
+    sensors = [SensorModel(name='gas', H=H, R=R, native_hz=native_hz)]
+
+    x0 = np.zeros(2, dtype=float)
+    P0 = np.diag([0.05, 0.01]).astype(float)
+    return F, Q, sensors, x0, P0

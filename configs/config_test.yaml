@@ -1,0 +1,17 @@
+datasets:
+  euroc:
+    root: "D:/data/euroc"
+  kitti:
+    root: "D:/data/kitti_raw"
+  tumvi:
+    root: "D:/data/tumvi"
+  uci_gas:
+    root: "/mnt/data/work/uci"
+  onemonth_gas:
+    root: "/mnt/data/work/onemonth"
+experiments:
+  p_max_multiplier: 3.0
+  random_seed: 42
+baselines:
+  event_trigger:
+    innovation_threshold: 3.0

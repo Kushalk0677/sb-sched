@@ -15,6 +15,10 @@ datasets:
     root: "D:/data/kitti_raw"
   tumvi:
     root: "D:/data/tumvi"
+  uci_gas:
+    root: "data/uci_gas_drift"
+  onemonth_gas:
+    root: "data/onemonth_gas"
 
 experiments:
   p_max_multiplier: 3.0
