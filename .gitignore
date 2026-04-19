@@ -1,3 +1,6 @@
+# Documentation
+docs/
+
 # Python cache / build artifacts
 __pycache__/
 *.py[cod]

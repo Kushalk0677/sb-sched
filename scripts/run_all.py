@@ -32,10 +32,6 @@ def main() -> None:
         "--config", default="configs/config.yaml",
         help="Path to YAML config (relative to project root)",
     )
-    parser.add_argument(
-        "--paper-only", action="store_true",
-        help="For Exp 1, use only the paper-safe baseline subset",
-    )
     args = parser.parse_args()
 
     config_path = PROJECT_ROOT / args.config
@@ -73,7 +69,7 @@ def main() -> None:
         print(f"[Exp {exp_num}] Done in {time.time() - t0:.1f}s")
         return result
 
-    results[1] = run(1, lambda cfg: run_exp1(cfg, include_advanced=not args.paper_only))
+    results[1] = run(1, lambda cfg: run_exp1(cfg))
     results[2] = run(2, run_exp2)
     results[3] = run(3, run_exp3)
     results[4] = run(4, run_exp4)

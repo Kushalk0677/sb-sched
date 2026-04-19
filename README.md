@@ -49,7 +49,7 @@ The correct reading of the results is:
 - Useful evidence about **resource-constrained estimation behaviour**
 - Not a claim to replace a full SLAM, VIO, or production fusion system
 
-A fuller explanation is in `docs/FRAMING_AND_LIMITATIONS.md`.
+A fuller explanation of the framing and limitations is in the paper itself (Section VI).
 
 ---
 
@@ -82,8 +82,6 @@ CGD-30 is a new field dataset introduced alongside this paper, designed as a **s
 | Concentration range | 350 – 900 ppm |
 | Temperature range | 18 °C – 43 °C |
 | Humidity range | 24.9 % – 90.0 % RH |
-
-Data collected by K. Khemani
 
 ### Controlled Events
 
@@ -148,6 +146,24 @@ data/onemonth_gas/
 
 ---
 
+## Baselines
+
+The paper comparison set includes:
+
+- **Fixed-High / Fixed-Low / Fixed-Matched** — fixed-rate reference policies
+- **Heuristic Adaptive** — rate-adaptive heuristic
+- **AoI-Min** — Age-of-Information minimising scheduler
+- **Periodic Optimal** — offline periodic schedule search
+- **Event-Trigger** — reactive innovation-triggered baseline
+- **Var-Threshold** *(new)* — tuned event-trigger firing at `tr(P) > α · P_max` (default α=0.90); a parametric refinement that directly addresses threshold-sensitivity concerns
+- **Delay-Aware** — delivery-delay-compensating policy
+- **Clairvoyant Lookahead (CL)** *(new, upper bound)* — clairvoyant scheduler with perfect future covariance knowledge; represents the tightest upper bound on any purely covariance-driven online policy
+- **SB-Sched** — the proposed method
+
+> Note: Earlier research-oriented baselines (WhittleIndex, CDKFGradient, MIQPOptimal, DRL) have been removed from the paper comparison set. They were heavier, more assumption-sensitive, and not appropriate for the main evaluation.
+
+---
+
 ## Key Results
 
 ### Budget-Constrained Activation (KITTI Raw @ 2 Hz)
@@ -157,11 +173,15 @@ data/onemonth_gas/
 | Fixed-Low | 0.306 | 0.708 | 4.98 |
 | Fixed-Matched | 0.275 | 0.694 | 4.00 |
 | Heuristic | 0.306 | 0.714 | 4.98 |
+| AoI-Min | 0.271 | 0.731 | 4.12 |
+| Periodic-Opt | 0.289 | 0.701 | 4.55 |
+| Var-Threshold (α=0.90) | 0.182 | 0.706 | 2.44 |
 | Event-Trigger | 0.196 | 0.707 | 2.61 |
 | Delay-Aware | 0.210 | 0.683 | 2.29 |
 | **SB-Sched** | **0.140** | **0.662** | **0.99** |
+| CL *(upper bound, non-causal)* | 0.000 | 0.660 | 0.00 |
 
-*VR = Violation Rate; AOT = Area Over Threshold.*
+*VR = Violation Rate; AOT = Area Over Threshold. CL = Clairvoyant Lookahead, a non-causal upper bound with perfect future covariance knowledge — not a deployable policy.*
 
 ### Cross-Domain Results Under Delay (SB-Sched vs. Event-Trigger)
 
@@ -179,19 +199,12 @@ SB-Sched is the **only tested policy** to achieve zero violations under fixed de
 ## Repository Contents
 
 ```
-main_repo/
 ├── configs/            # Dataset roots and experiment settings
 ├── data/               # Raw datasets (EuRoC, KITTI, UCI Gas, CGD-30)
-├── docs/               # Extended documentation
-│   ├── PROJECT_OVERVIEW.md
-│   ├── SB_Sched_Formal_Guarantee.md
-│   ├── experimental_pipeline.md
-│   ├── ekf_extension.md
-│   └── FRAMING_AND_LIMITATIONS.md
 ├── results/            # Saved CSVs and figures (exp1–exp11, realism)
 ├── scripts/            # Entry points: demo, run experiments, plot
 ├── src/
-│   ├── baselines/      # Fixed, heuristic, event-triggered, delay-aware
+│   ├── baselines/      # Fixed, heuristic, event-triggered, delay-aware, var-threshold, CL
 │   ├── datasets/       # Loaders for EuRoC, KITTI, UCI Gas, CGD-30
 │   ├── experiments/    # Exp 1–11 runners
 │   ├── kalman/         # Linear KF and EKF paths
@@ -293,7 +306,8 @@ results/demo/
 @article{khemani2025sbsched,
   title   = {Predictive Uncertainty-Bounded Sensor Activation for Rate-Constrained Robotic and Chemical Sensing},
   author  = {Khemani, Kushal and Jain, Daksh and Raines, Jackson and Khan, Rakin and Rizvi, Syed Hamzah},
-  year    = {2026},
+  year    = {2025},
+  doi     = {10.1109/LSENS.202X.0000000}
 }
 ```
 

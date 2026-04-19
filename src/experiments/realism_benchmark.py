@@ -15,7 +15,7 @@ import inspect
 import numpy as np
 import pandas as pd
 
-from ..baselines.main import FixedHighScheduler, EventTriggeredScheduler
+from ..baselines.main import FixedHighScheduler, EventTriggeredScheduler, ClairvoyantLookaheadScheduler, VarianceThresholdScheduler
 from ..datasets.loaders import get_loader
 from ..datasets.models import euroc_model, kitti_model, gas_signal_model
 from ..datasets.realistic_measurements import (
@@ -43,7 +43,9 @@ from ..utils.metrics import (
 DEFAULT_METHODS: dict[str, type] = {
     "fixed_high": FixedHighScheduler,
     "event_trigger": EventTriggeredScheduler,
+    "var_threshold": VarianceThresholdScheduler,
     "sb_sched": StalenessScheduler,
+    "clairvoyant_lookahead": ClairvoyantLookaheadScheduler,
 }
 
 

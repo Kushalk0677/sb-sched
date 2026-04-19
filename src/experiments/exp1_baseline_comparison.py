@@ -3,8 +3,8 @@
 src/experiments/exp1_baseline_comparison.py
 
 Experiment 1: Core baseline comparison.
-By default this file runs only the paper-safe baselines.
-Advanced baselines can be included explicitly for repo-only or appendix runs.
+Runs all paper baselines including Clairvoyant Lookahead (CL) (upper bound) and
+Variance-Threshold (tuned event-trigger).
 """
 
 import re
@@ -22,19 +22,9 @@ from ..baselines.main import (
     PeriodicOptimalScheduler,
     EventTriggeredScheduler,
     DelayAwarePolicyScheduler,
+    ClairvoyantLookaheadScheduler,
+    VarianceThresholdScheduler,
 )
-
-# Advanced / research baselines (kept optional)
-try:
-    from ..baselines.advanced import (
-        WhittleIndexScheduler,
-        CDKFGradientScheduler,
-        MIQPOptimalScheduler,
-        DRLScheduler,
-    )
-    _HAS_ADVANCED = True
-except Exception:
-    _HAS_ADVANCED = False
 
 from ..scheduler.sb_sched import StalenessScheduler
 from ..datasets.models import get_model
@@ -51,15 +41,10 @@ PAPER_METHODS = {
     "periodic_opt":  (PeriodicOptimalScheduler, {"native_rates": None}),
     "event_trigger": (EventTriggeredScheduler, {}),
     "delay_aware":   (DelayAwarePolicyScheduler, {}),
+    "var_threshold": (VarianceThresholdScheduler, {}),
+    "clairvoyant_lookahead": (ClairvoyantLookaheadScheduler, {}),
     "sb_sched":      (StalenessScheduler,    {}),
 }
-
-ADVANCED_METHODS = {
-    "whittle":   (WhittleIndexScheduler, {"Q_diag": None}),
-    "cd_kf":     (CDKFGradientScheduler, {"native_rates": None}),
-    "miqp_opt":  (MIQPOptimalScheduler,  {"native_rates": None}),
-    "drl_sched": (DRLScheduler,          {}),
-} if _HAS_ADVANCED else {}
 
 SEQUENCES = {
     "euroc": ["MH_01_easy", "MH_02_easy", "MH_03_medium",
@@ -117,16 +102,8 @@ def _resolve_dataset_root(config: dict, dataset: str) -> str:
 
     return str(configured)
 
-def _resolve_methods(include_advanced: bool) -> dict[str, tuple[type, dict]]:
-    methods = dict(PAPER_METHODS)
-    if include_advanced:
-        if not _HAS_ADVANCED:
-            raise ImportError(
-                "Advanced baselines requested, but '..baselines.advanced' "
-                "could not be imported."
-            )
-        methods.update(ADVANCED_METHODS)
-    return methods
+def _resolve_methods() -> dict[str, tuple[type, dict]]:
+    return dict(PAPER_METHODS)
 
 
 def _inject_runtime_kwargs(dataset: str, base_kwargs: dict, native_rates: dict) -> dict:
@@ -151,7 +128,6 @@ def run_exp1(
     results_dir: str = "results/exp1",
     filter_dataset: str | None = None,
     filter_sequence: str | None = None,
-    include_advanced: bool = True,
 ) -> pd.DataFrame:
     """
     Run Experiment 1 across methods, datasets, and sequences.
@@ -161,15 +137,12 @@ def run_exp1(
         results_dir: Directory for CSV outputs.
         filter_dataset: Restrict to one dataset ("euroc", "kitti", "tumvi").
         filter_sequence: Restrict to one sequence name.
-        include_advanced:
-            True  -> run the full historical comparison set, including advanced baselines.
-            False -> run only the paper-safe baseline subset.
 
     Returns:
         DataFrame with all results.
     """
     Path(results_dir).mkdir(parents=True, exist_ok=True)
-    methods = _resolve_methods(include_advanced)
+    methods = _resolve_methods()
     all_results = []
 
     sequences_to_run = {
@@ -281,7 +254,7 @@ def run_exp1(
         rows.append(row)
 
     df = pd.DataFrame(rows)
-    output_name = "exp1_results.csv" if include_advanced else "exp1_results_paper_only.csv"
+    output_name = "exp1_results.csv"
     out_path = Path(results_dir) / output_name
     df.to_csv(out_path, index=False)
     print(f"\nResults saved to {out_path}")

@@ -60,10 +60,6 @@ def main() -> None:
         "--config", default="configs/config.yaml",
         help="Path to YAML config (relative to project root)",
     )
-    parser.add_argument(
-        "--paper-only", action="store_true",
-        help="For Exp 1, run only the paper-safe baseline subset",
-    )
     args = parser.parse_args()
 
     # Validate: --sequence requires --dataset
@@ -78,7 +74,6 @@ def main() -> None:
             config,
             filter_dataset=args.dataset,
             filter_sequence=args.sequence,
-            include_advanced=not args.paper_only,
         )
         if not df.empty:
             print("\n=== Mean VR and RMSE per method / dataset ===")

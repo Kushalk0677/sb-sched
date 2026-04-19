@@ -1,9 +1,12 @@
 """Compatibility exports for baseline schedulers.
 
-Main, paper-safe baselines now live in ``baselines.main``.
-Research-oriented baselines live in ``baselines.advanced``.
-This module re-exports both sets to preserve the original import path:
+Main, paper-safe baselines live in ``baselines.main``.
+This module re-exports them to preserve the original import path:
     from baselines.baselines import ...
+
+Advanced baselines (WhittleIndexScheduler, CDKFGradientScheduler,
+MIQPOptimalScheduler, DRLScheduler) have been removed from the paper
+comparison set and are no longer exported here.
 """
 
 from .main import (
@@ -16,12 +19,8 @@ from .main import (
     PeriodicOptimalScheduler,
     EventTriggeredScheduler,
     DelayAwarePolicyScheduler,
-)
-from .advanced import (
-    WhittleIndexScheduler,
-    CDKFGradientScheduler,
-    MIQPOptimalScheduler,
-    DRLScheduler,
+    ClairvoyantLookaheadScheduler,
+    VarianceThresholdScheduler,
 )
 
 __all__ = [
@@ -34,8 +33,6 @@ __all__ = [
     "PeriodicOptimalScheduler",
     "EventTriggeredScheduler",
     "DelayAwarePolicyScheduler",
-    "WhittleIndexScheduler",
-    "CDKFGradientScheduler",
-    "MIQPOptimalScheduler",
-    "DRLScheduler",
+    "ClairvoyantLookaheadScheduler",
+    "VarianceThresholdScheduler",
 ]

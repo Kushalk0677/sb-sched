@@ -16,6 +16,8 @@ from ..baselines.main import (
     FixedLowScheduler,
     FixedMatchedScheduler,
     HeuristicAdaptiveScheduler,
+    ClairvoyantLookaheadScheduler,
+    VarianceThresholdScheduler,
 )
 from ..datasets.loaders import get_loader
 from ..kalman.ekf import ExtendedKalmanFilter
@@ -61,6 +63,9 @@ def run_exp2(config: dict, results_dir: str = "results/exp2") -> pd.DataFrame:
         for method_name, cls in [
             ("sb_sched", StalenessScheduler),
             ("heuristic", HeuristicAdaptiveScheduler),
+            ("event_trigger", EventTriggeredScheduler),
+            ("var_threshold", VarianceThresholdScheduler),
+            ("clairvoyant_lookahead", ClairvoyantLookaheadScheduler),
         ]:
             result = run_single(
                 scheduler_cls=cls,

@@ -19,44 +19,39 @@ matplotlib.rcParams.update({
 })
 
 METHOD_COLORS = {
-    "fixed_high":    "#2c7bb6",
-    "fixed_low":     "#abd9e9",
-    "fixed_matched": "#74add1",
-    "heuristic":     "#fdae61",
-    "aoi_min":       "#f46d43",
-    "whittle":       "#d73027",
-    "periodic_opt":  "#a50026",
-    "event_trigger": "#fee090",
-    "cd_kf":         "#878787",
-    "miqp_opt":      "#b35806",   # Dark orange — strong offline baseline
-    "drl_sched":     "#542788",   # Purple — learning-based
-    "delay_aware":   "#35978f",   # Teal — closely related to ours
-    "sb_sched":      "#1a9641",   # Green = ours
+    "fixed_high":            "#2c7bb6",
+    "fixed_low":             "#abd9e9",
+    "fixed_matched":         "#74add1",
+    "heuristic":             "#fdae61",
+    "aoi_min":               "#f46d43",
+    "periodic_opt":          "#a50026",
+    "event_trigger":         "#fee090",
+    "var_threshold":         "#f4a582",   # Salmon — tuned reactive variant
+    "delay_aware":           "#35978f",   # Teal — closely related to ours
+    "clairvoyant_lookahead": "#bababa",   # Grey — non-causal upper bound
+    "sb_sched":              "#1a9641",   # Green = ours
 }
 
 METHOD_LABELS = {
-    "fixed_high":    "Fixed-High",
-    "fixed_low":     "Fixed-Low",
-    "fixed_matched": "Fixed-Matched",
-    "heuristic":     "Heuristic",
-    "aoi_min":       "AoI-Min",
-    "whittle":       "Whittle Index",
-    "periodic_opt":  "Periodic-Opt",
-    "event_trigger": "Event-Triggered",
-    "cd_kf":         "CD-KF Grad",
-    "miqp_opt":      "MIQP-Opt (Dutta \'23)",
-    "drl_sched":     "DRL Sched (Alali \'24)",
-    "delay_aware":   "Delay-Aware (arXiv \'26)",
-    "sb_sched":      "SB-Sched (ours)",
+    "fixed_high":            "Fixed-High",
+    "fixed_low":             "Fixed-Low",
+    "fixed_matched":         "Fixed-Matched",
+    "heuristic":             "Heuristic",
+    "aoi_min":               "AoI-Min",
+    "periodic_opt":          "Periodic-Opt",
+    "event_trigger":         "Event-Trigger",
+    "var_threshold":         "Var-Threshold",
+    "delay_aware":           "Delay-Aware",
+    "clairvoyant_lookahead": "CL (upper bound)",
+    "sb_sched":              "SB-Sched (ours)",
 }
 
-# Canonical display order for bar charts (ours last)
+# Canonical display order for bar charts (upper bound last, ours second-to-last)
 METHOD_ORDER = [
     "fixed_high", "fixed_low", "fixed_matched",
-    "heuristic", "aoi_min", "whittle",
-    "periodic_opt", "event_trigger", "cd_kf",
-    "miqp_opt", "drl_sched", "delay_aware",
-    "sb_sched",
+    "heuristic", "aoi_min", "periodic_opt",
+    "event_trigger", "var_threshold", "delay_aware",
+    "sb_sched", "clairvoyant_lookahead",
 ]
 
 
