@@ -311,6 +311,17 @@ results/demo/
 }
 ```
 
+If you use the CGD-30 dataset, please also cite:
+
+```bibtex
+@dataset{khemani2025cgd30,
+  title   = {{CGD-30}: Continuous Gas Deployment Dataset},
+  author  = {Khemani, Kushal},
+  year    = {2025},
+  url     = {https://github.com/Kushalk0677/sb-sched}
+}
+```
+
 ---
 
 ## License

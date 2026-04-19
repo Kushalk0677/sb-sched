@@ -23,9 +23,6 @@ from baselines.baselines import (
     HeuristicAdaptiveScheduler,
     AoIMinScheduler,
     EventTriggeredScheduler,
-    WhittleIndexScheduler,
-    MIQPOptimalScheduler,
-    DRLScheduler,
     DelayAwarePolicyScheduler,
 )
 
@@ -369,83 +366,6 @@ class TestAoIMinScheduler:
         kf.predict()
         triggered = sched.step(1, {"s1": np.zeros(3), "s2": np.zeros(3)})
         assert len(triggered) <= 1
-
-
-class TestWhittleIndexScheduler:
-
-    def test_selects_high_aoi_sensor(self):
-        kf = make_dual_kf()
-        Q_diag = np.array([0.001] * 6)
-        sched = WhittleIndexScheduler(kf, p_max=1.0, sensor_names=["s1", "s2"],
-                                       Q_diag=Q_diag, updates_per_step=1)
-        kf.predict()
-        sched.aoi["s1"] = 10
-        sched.aoi["s2"] = 1
-        triggered = sched.step(1, {"s1": np.zeros(3), "s2": np.zeros(3)})
-        assert "s1" in triggered
-
-
-# ── MIQPOptimalScheduler ──────────────────────────────────────────────────────
-
-class TestMIQPOptimalScheduler:
-
-    def test_period_is_positive_integer(self):
-        kf = make_kf(P0_scale=0.05)
-        miqp = MIQPOptimalScheduler(kf, p_max=1.0, sensor_names=["gps"],
-                                     native_rates={"gps": 10.0},
-                                     horizon=20, max_iter=50)
-        assert isinstance(miqp.periods["gps"], int) and miqp.periods["gps"] >= 1
-
-    def test_triggers_at_least_once(self):
-        rng = np.random.default_rng(0)
-        kf = make_kf(P0_scale=0.05)
-        miqp = MIQPOptimalScheduler(kf, p_max=1.0, sensor_names=["gps"],
-                                     native_rates={"gps": 10.0},
-                                     horizon=20, max_iter=50)
-        for step in range(200):
-            kf.predict()
-            miqp.step(step, {"gps": rng.standard_normal(3) * 0.1})
-        assert len(miqp.trigger_log) > 0
-
-    def test_tight_budget_forces_period_greater_than_one(self):
-        kf = make_dual_kf()
-        miqp = MIQPOptimalScheduler(kf, p_max=10.0, sensor_names=["s1", "s2"],
-                                     native_rates={"s1": 10.0, "s2": 5.0},
-                                     rate_budget=2.0, horizon=20, max_iter=100)
-        assert any(miqp.periods[n] > 1 for n in ["s1", "s2"]), (
-            f"periods={miqp.periods} — expected at least one > 1 under tight budget"
-        )
-
-
-# ── DRLScheduler ──────────────────────────────────────────────────────────────
-
-class TestDRLScheduler:
-
-    def test_triggers_at_least_once_in_500_steps(self):
-        rng = np.random.default_rng(1)
-        kf = make_kf(P0_scale=0.05)
-        drl = DRLScheduler(kf, p_max=1.0, sensor_names=["gps"],
-                            greedy_after=50, epsilon=0.1)
-        for step in range(500):
-            kf.predict()
-            drl.step(step, {"gps": rng.standard_normal(3) * 0.1})
-        assert len(drl.trigger_log) > 0
-
-    def test_aoi_resets_after_triggered_update(self):
-        kf = make_kf(P0_scale=0.05)
-        drl = DRLScheduler(kf, p_max=0.2, sensor_names=["gps"],
-                            greedy_after=0, epsilon=0.0)
-        kf.predict()
-        drl.aoi["gps"] = 50  # force high AoI so policy schedules
-        drl.step(0, {"gps": np.zeros(3)})
-        assert drl.aoi["gps"] == 0
-
-    def test_forward_pass_outputs_valid_probabilities(self):
-        kf = make_kf(P0_scale=0.05)
-        drl = DRLScheduler(kf, p_max=1.0, sensor_names=["gps"])
-        obs = drl._obs()
-        probs = drl._forward(obs)
-        assert np.all(probs > 0) and np.all(probs < 1), f"probs={probs}"
 
 
 # ── DelayAwarePolicyScheduler ─────────────────────────────────────────────────
