@@ -2,7 +2,7 @@
 
 **SB-Sched** is a predictive sensor activation policy that anticipates covariance-bound crossings and schedules acquisitions before violations occur, using only the current covariance trace and a user-defined budget *P*_max. It is evaluated on robotic (EuRoC, KITTI) and chemical sensing datasets, including **CGD-30**, a new 31-day continuous gas-sensing field dataset.
 
-> **Paper:** Khemani, K., Jain, D., Raines, J., Khan, R., & Rizvi, S. H. (2025). *Predictive Uncertainty-Bounded Sensor Activation for Rate-Constrained Robotic and Chemical Sensing.*
+> **Paper:** Khemani, K., Jain, D., Raines, J., Khan, R., & Rizvi, S. H. (2026). *Predictive Uncertainty-Bounded Sensor Activation for Rate-Constrained Robotic and Chemical Sensing.*
 >
 > **Code & Data:** [github.com/Kushalk0677/sb-sched](https://github.com/Kushalk0677/sb-sched)
 
@@ -306,8 +306,8 @@ results/demo/
 @article{khemani2025sbsched,
   title   = {Predictive Uncertainty-Bounded Sensor Activation for Rate-Constrained Robotic and Chemical Sensing},
   author  = {Khemani, Kushal and Jain, Daksh and Raines, Jackson and Khan, Rakin and Rizvi, Syed Hamzah},
-  year    = {2025},
-  doi     = {10.1109/LSENS.202X.0000000}
+  year    = {2026},
+  doi     = 
 }
 ```
 
